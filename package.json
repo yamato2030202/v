@@ -11,6 +11,12 @@
     "@hapi/boom": "^10.0.1",
     "pino": "^9.0.0",
     "axios": "^1.6.8",
+    "express": "^4.19.2",
     "qrcode-terminal": "^0.12.0"
-  }
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "author": "ELGRANDFT",
+  "license": "MIT"
 }
