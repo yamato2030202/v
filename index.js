@@ -7,6 +7,15 @@ const axios = require("axios");
 const DEVELOPER_NAME = "ELGRANDFT";
 const GROQ_API_KEY = "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";
 
+// تعيين منفذ وهمي لمنع Railway من إغلاق الحاوية (مهم جداً)
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 8080;
+app.get('/', (req, res) => res.send('Bot is running!'));
+app.listen(PORT, () => console.log(`🌍 السيرفر الوهمي يعمل على المنفذ: ${PORT}`));
+
+let qrLink = null; // لتخزين الرابط
+
 async function startAI() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info');
 
@@ -25,10 +34,13 @@ async function startAI() {
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
         if (qr) {
-            console.log(`👉 الرابط: https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qr)}&size=300x300`);
+            // توليد الرابط وتخزينه
+            qrLink = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qr)}&size=300x300`;
+            console.log(`\n👉 الرابط المباشر: ${qrLink}\n`);
         }
         if (connection === 'open') {
             console.log(`\n✅ تم الاتصال بنجاح! نظام المطور عبد الصمد جاهز للرد.`);
+            qrLink = null; // تصفير الرابط بعد نجاح الاتصال
         }
         if (connection === 'close') {
             const shouldReconnect = (lastDisconnect.error instanceof Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
@@ -36,10 +48,9 @@ async function startAI() {
         }
     });
 
-    // --- 🤖 الجزء المسؤول عن الرد (الذي كان ينقصك) ---
     sock.ev.on('messages.upsert', async ({ messages }) => {
         const msg = messages[0];
-        if (!msg.message || msg.key.fromMe) return; // لا يرد على نفسه
+        if (!msg.message || msg.key.fromMe) return;
 
         const from = msg.key.remoteJid;
         const text = (msg.message.conversation || msg.message.extendedTextMessage?.text || "").trim();
@@ -47,7 +58,6 @@ async function startAI() {
         if (text) {
             console.log(`📩 رسالة جديدة من ${from}: ${text}`);
             try {
-                // طلب الرد من ذكاء Groq الاصطناعي
                 const res = await axios.post("https://api.groq.com/openai/v1/chat/completions", {
                     model: "llama-3.3-70b-versatile",
                     messages: [
@@ -59,8 +69,6 @@ async function startAI() {
                 });
 
                 const reply = res.data.choices[0].message.content;
-                
-                // إرسال الرد للواتساب
                 await sock.sendMessage(from, { text: reply }, { quoted: msg });
                 
             } catch (e) {
@@ -73,5 +81,11 @@ async function startAI() {
 
 startAI();
 
-// نبض النظام
-setInterval(() => { console.log("System Active & Waiting for messages..."); }, 1000 * 60 * 5);
+// تكرار طباعة الرابط كل 10 ثوانٍ في الـ Logs حتى تمسحه ولا يختفي أبداً
+setInterval(() => { 
+    if (qrLink) {
+        console.log(`\n🚨 انسخ الرابط من هنا سريعاً:\n${qrLink}\n`);
+    } else {
+        console.log("System Active & Waiting for connection...");
+    }
+}, 1000 * 10);
