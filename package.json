@@ -1,0 +1,16 @@
+{
+  "name": "elgrandft-ai-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp AI Bot by ELGRANDFT",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.9",
+    "@hapi/boom": "^10.0.1",
+    "pino": "^9.0.0",
+    "axios": "^1.6.8",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
